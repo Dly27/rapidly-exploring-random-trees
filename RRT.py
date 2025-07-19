@@ -5,6 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.spatial import cKDTree
 from scipy.ndimage import distance_transform_edt
+from scipy.stats.qmc import Halton
 import time
 
 
@@ -28,53 +29,99 @@ def bresenham(x0, y0, x1, y1):
             err += dx
             y0 += sy
 
-def is_in_obstacle(grid_map, point):
-    x, y = int(np.round(point[0])), int(np.round(point[1]))
-    return grid_map[y][x] == 1
 
-def distance_from_obstacle(grid_map, point):
-    mask = (grid_map == 0)
-    distance_map = distance_transform_edt(mask)
-    x, y = int(np.round(point[0])), int(np.round(point[1]))
-    return distance_map[y][x]
 class Sampler:
-    def __init__(self, sampler_type, goal, goal_bias, height, width, grid_map):
+    def __init__(self, sampler_type, goal, goal_bias, height, width, grid_map, iterations=50):
         self.sampler_type = sampler_type
         self.goal = goal
         self.goal_bias = goal_bias
         self.height = height
         self.width = width
         self.grid_map = grid_map
+        self.distance_map = distance_transform_edt((self.grid_map == 0))
+        self.iterations = iterations
+        self.halton_sampler = Halton(d=2, scramble=False)
+        self.halton_index = 0
+
+    def is_in_obstacle(self, point):
+        """
+        Checks wheteher a given point is in an obstacle
+        :param point: Point to check
+        :return: True if in obstacle, False otherwise
+        """
+        x, y = int(np.round(point[0])), int(np.round(point[1]))
+        return self.grid_map[y][x] == 1
+
+    def distance_from_obstacle(self, point):
+        x, y = int(np.round(point[0])), int(np.round(point[1]))
+        return self.distance_map[y][x]
 
     def uniform(self):
+        """
+        Uniformly samples a point
+        :return: (float, float): A 2D point in the grid map
+        """
         return np.array([np.random.uniform(0, self.width), np.random.uniform(0, self.height)])
 
     def goal_biased(self):
+        """
+        Adds node towards the goal point with probability less than self.goal_bias,
+        point is uniformly sampled otherwise
+        :return: (float, float): A 2D point in the grid map
+        """
         if np.random.rand() < self.goal_bias:
             return self.goal
         else:
             return self.uniform()
 
-    def obstacle(self, sigma=5):
+    def obstacle_biased(self, sigma=5):
+        """
+        Uniformly samples one point and use a Gaussian sample for another point located around the first
+        and returns the point closest to an obstacle
+        :return: (float, float): A 2D point in the grid map
+        """
         p1 = self.uniform()
-        p2 = p1 + np.random.normal(0, sigma, size=2)
-
-        if distance_from_obstacle(self.grid_map, p1) <= distance_from_obstacle(self.grid_map, p2):
+        p2 = np.clip(p1 + np.random.normal(0, sigma, size=2), [0, 0], [self.width, self.height])  # Clip to keep p2 in grid_map bounds
+        if self.distance_from_obstacle(p1) <= self.distance_from_obstacle(p2):
             return p1
         else:
             return p2
 
     def bridge(self, sigma=5):
-        p1 = self.uniform()
-        p2 = p1 + np.random.normal(0, sigma, size=2)
-        midpoint = (p1 + p2) / 2
+        """
+        Uniformly samples self.iterations number of points and selects a midpoint of two points which are
+        located in distinct obstacles, if found
+        :return: (float, float): A 2D point in the grid map
+        """
+        for i in range(self.iterations):
+            p1 = self.uniform()
+            p2 = np.clip(p1 + np.random.normal(0, sigma, size=2), [0, 0], [self.width, self.height])  # Clip to keep p2 in grid_map bounds
+            midpoint = (p1 + p2) / 2
 
-        if is_in_obstacle(self.grid_map, p1) and is_in_obstacle(self.grid_map, p2):
-            return p1, p2, midpoint
-        else:
-            return self.uniform()
+            if self.is_in_obstacle(p1) and self.is_in_obstacle(p2) and not self.is_in_obstacle(midpoint):
+                return midpoint
+        return self.uniform()
 
+    def far_from_obstacle(self):
+        """
+        Uniformly samples self.iterations number of points and selects the point farthest from its closest obstacle
+        :return: (float, float): A 2D point in the grid map
+        """
+        points = [self.uniform() for _ in range(self.iterations)]
+        distances = [self.distance_from_obstacle(point) for point in points]
+        return points[np.argmax(distances)]
 
+    def halton(self):
+        """
+        Returns next point in the Halton low-discrepency sequence scaled by the width and height of the grid map
+        :return: (float, float): A 2D point in the grid map
+        """
+        point = self.halton_sampler.random(n=1)[0]
+        self.halton_index += 1
+        x = point[0] * self.width
+        y = point[1] * self.height
+
+        return np.array([x, y])
 
 class Node:
     def __init__(self, states):
@@ -97,6 +144,7 @@ class RRT:
         self.goal_bias = goal_bias
         self.goal = goal
         self.step = step
+
 
     def add_state(self, states, parent):
         node = Node(states)
@@ -178,7 +226,7 @@ class RRT:
         while current is not None:
             self.path.append(current.states)
             current = current.parent
-        self.path = self.path.reverse()
+        self.path.reverse()
         return self.path
 
     def smooth_path(self):
