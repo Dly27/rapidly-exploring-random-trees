@@ -4,6 +4,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.spatial import cKDTree
+from scipy.ndimage import distance_transform_edt
 import time
 
 
@@ -26,6 +27,53 @@ def bresenham(x0, y0, x1, y1):
         if e2 <= dx:
             err += dx
             y0 += sy
+
+def is_in_obstacle(grid_map, point):
+    x, y = int(np.round(point[0])), int(np.round(point[1]))
+    return grid_map[y][x] == 1
+
+def distance_from_obstacle(grid_map, point):
+    mask = (grid_map == 0)
+    distance_map = distance_transform_edt(mask)
+    x, y = int(np.round(point[0])), int(np.round(point[1]))
+    return distance_map[y][x]
+class Sampler:
+    def __init__(self, sampler_type, goal, goal_bias, height, width, grid_map):
+        self.sampler_type = sampler_type
+        self.goal = goal
+        self.goal_bias = goal_bias
+        self.height = height
+        self.width = width
+        self.grid_map = grid_map
+
+    def uniform(self):
+        return np.array([np.random.uniform(0, self.width), np.random.uniform(0, self.height)])
+
+    def goal_biased(self):
+        if np.random.rand() < self.goal_bias:
+            return self.goal
+        else:
+            return self.uniform()
+
+    def obstacle(self, sigma=5):
+        p1 = self.uniform()
+        p2 = p1 + np.random.normal(0, sigma, size=2)
+
+        if distance_from_obstacle(self.grid_map, p1) <= distance_from_obstacle(self.grid_map, p2):
+            return p1
+        else:
+            return p2
+
+    def bridge(self, sigma=5):
+        p1 = self.uniform()
+        p2 = p1 + np.random.normal(0, sigma, size=2)
+        midpoint = (p1 + p2) / 2
+
+        if is_in_obstacle(self.grid_map, p1) and is_in_obstacle(self.grid_map, p2):
+            return p1, p2, midpoint
+        else:
+            return self.uniform()
+
 
 
 class Node:
@@ -78,7 +126,7 @@ class RRT:
         return (direction / norm) * self.step
 
     def new_state(self, x_near, u):
-        return x_near.states + u * self.step
+        return x_near.states + u
 
     def valid(self, x1, x2=None):
         # Check nodes are in valid positions (In bounds / not in obstacles)
@@ -125,11 +173,12 @@ class RRT:
             self.kd_tree_needs_update = False
 
     def get_path(self, goal_node):
+        self.path = []
         current = goal_node
         while current is not None:
             self.path.append(current.states)
             current = current.parent
-        self.path = self.path[::-1]
+        self.path = self.path.reverse()
         return self.path
 
     def smooth_path(self):
@@ -143,6 +192,8 @@ class RRT:
                     i = j
                     break
                 j -= 1
+            else:
+                i += 1
         self.smoothed_path = smooth
         return self.smoothed_path
 
