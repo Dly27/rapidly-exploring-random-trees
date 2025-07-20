@@ -31,8 +31,8 @@ def bresenham(x0, y0, x1, y1):
 
 
 class Sampler:
-    def __init__(self, sampler_type, goal, goal_bias, height, width, grid_map, iterations=50):
-        self.sampler_type = sampler_type
+    def __init__(self, sampler_method, goal, goal_bias, height, width, grid_map, iterations=50):
+        self.sampler_type = sampler_method
         self.goal = goal
         self.goal_bias = goal_bias
         self.height = height
@@ -116,12 +116,27 @@ class Sampler:
         Returns next point in the Halton low-discrepency sequence scaled by the width and height of the grid map
         :return: (float, float): A 2D point in the grid map
         """
-        point = self.halton_sampler.random(n=1)[0]
+        point = self.halton_sampler.random(n=1)[self.halton_index]
         self.halton_index += 1
         x = point[0] * self.width
         y = point[1] * self.height
 
         return np.array([x, y])
+
+    def sample(self):
+        methods = {
+            "uniform": self.uniform,
+            "goal_biased": self.goal_biased,
+            "obstacle_biased": self.obstacle_biased,
+            "bridge": self.bridge,
+            "halton": self.halton,
+            "far": self.far_from_obstacle,
+        }
+
+        if self.sampler_type not in methods:
+            raise ValueError(f"Unknown sampler type: {self.sampler_type}")
+
+        return methods[self.sampler_type]()
 
 class Node:
     def __init__(self, states):
@@ -130,7 +145,7 @@ class Node:
 
 
 class RRT:
-    def __init__(self, x_init, grid_map, rebuild_freq, goal, goal_bias, step):
+    def __init__(self, x_init, grid_map, rebuild_freq, goal, step):
         self.x_init = np.array(x_init)
         self.nodes = [Node(self.x_init)]
         self.grid_map = np.array(grid_map)
@@ -141,9 +156,19 @@ class RRT:
         self.rebuild_freq = rebuild_freq
         self.path = []
         self.smoothed_path = []
-        self.goal_bias = goal_bias
         self.goal = goal
         self.step = step
+        self.sampler = None
+
+    def select_sampler(self, sampler_method="uniform", iterations=50, goal_bias=0.05):
+        self.sampler = Sampler(sampler_method=sampler_method,
+                               iterations=iterations,
+                               grid_map=self.grid_map,
+                               goal=self.goal,
+                               goal_bias=goal_bias,
+                               height=self.map_height,
+                               width=self.map_width
+                               )
 
 
     def add_state(self, states, parent):
@@ -176,19 +201,19 @@ class RRT:
     def new_state(self, x_near, u):
         return x_near.states + u
 
-    def valid(self, x1, x2=None):
+    def valid(self, p1, p2=None):
         # Check nodes are in valid positions (In bounds / not in obstacles)
-        if x2 is None:
-            x = np.round(x1).astype(int)
-            x_idx, y_idx = x[0], x[1]
+        if p2 is None:
+            p1 = np.round(p1).astype(int)
+            x_idx, y_idx = p1[0], p1[1]
             if (0 <= x_idx < self.map_width) and (0 <= y_idx < self.map_height):
                 return self.grid_map[y_idx, x_idx] == 0
             return False
         # Check edges are in valid positions
         else:
-            x0, y0 = np.floor(x1).astype(int)
-            x1_, y1_ = np.floor(x2).astype(int)
-            for x, y in bresenham(x0, y0, x1_, y1_):
+            x0, y0 = np.floor(p1).astype(int)
+            x1, y1 = np.floor(p2).astype(int)
+            for x, y in bresenham(x0, y0, x1, y1):
                 if not (0 <= x < self.map_width and 0 <= y < self.map_height):
                     return False
                 if self.grid_map[y, x] == 1:
@@ -198,13 +223,7 @@ class RRT:
     def grow(self, k, r):
         # Use algorithm from the paper
         for _ in range(k):
-            if np.random.rand() < self.goal_bias:
-                x_random = self.goal
-            else:
-                x_random = np.array([
-                    np.random.uniform(0, self.map_width),
-                    np.random.uniform(0, self.map_height)
-                ])
+            x_random = self.sampler.sample()
             x_near = self.find_nearest_neighbour(x_random)
             u = self.select_control(x_near, x_random)
             x_new = self.new_state(x_near, u)
@@ -265,7 +284,8 @@ grid_map[80][50] = 0
 
 # Create RRT
 start = time.time()
-rrt = RRT(x_init=start_coords, grid_map=grid_map, rebuild_freq=500, goal=goal_coords, goal_bias=0.05, step=1)
+rrt = RRT(x_init=start_coords, grid_map=grid_map, rebuild_freq=500, goal=goal_coords, step=1)
+rrt.select_sampler(sampler_method="goal_biased", goal_bias=0.05, iterations=50)
 rrt.grow(k=5000, r=0.5)
 end = time.time()
 print("RUn time: ", end - start)
