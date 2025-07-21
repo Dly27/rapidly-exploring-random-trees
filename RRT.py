@@ -1,6 +1,7 @@
 # Paper: https://msl.cs.illinois.edu/~lavalle/papers/Lav98c.pdf
 # Paper: https://arxiv.org/pdf/1105.1186
 # Paper: https://www.researchgate.net/publication/2539782_The_Bridge_Test_for_Sampling_Narrow_Passages_with_Probabilistic_Roadmap_Planners
+from grids.grids import *
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -271,6 +272,12 @@ class RRT:
         return (direction / norm) * self.step
 
     def new_state(self, x_near, u):
+        """
+        Returns an adjusted value using the states of x_near to set as x_new
+        :param x_near: Node in RRT closest to sampled point
+        :param u: Value calculated from select_control, used to adjust x_near states
+        :return: array: the states of x_new
+        """
         return x_near.states + u
 
     def valid(self, p1, p2=None):
@@ -465,31 +472,23 @@ class Plotter:
         plt.grid(True)
         plt.show()
 
-
-
-
     # ========== RUNNING TEST ==========
 
 if __name__ == "__main__":
 
-    grid_map = np.zeros((100, 100), dtype=int)
+    grid_map = load_map("grids/street-map/London_1_512.map")
     start_coords = [1, 1]
-    goal_coords = np.array([95, 95])
+    goal_coords = np.array([378, 238])
     rebuild_freq = 500
-    step = 1
-    sampler_method = "far"
+    step = 10
+    sampler_method = "goal_biased"
     goal_bias = 0.05
     iterations = 50
     k = 5000
-    r = 1
-
-    for i in range(99):
-        for j in range(99):
-            if i % 4 == 0 and j % 4 == 0:
-                grid_map[i][j] = 1
-
+    r = 10
     grid_map[95][95] = 0    # Make sure goal is not in an obstacle
 
+    """
     benchmarker = Benchmark(grid_map=grid_map, x_init=start_coords, goal=goal_coords,
                             step=step, rebuild_freq=rebuild_freq, k=k, r=r)
 
@@ -498,8 +497,7 @@ if __name__ == "__main__":
     """
     plot = Plotter(grid_map=grid_map, x_init=start_coords, goal=goal_coords,
                             step=step, rebuild_freq=rebuild_freq, k=k, r=r,
-                            sampler_method="uniform", goal_bias=0.05, iterations=50
+                            sampler_method=sampler_method, goal_bias=goal_bias, iterations=iterations
                    )
 
     plot.plot_grid()
-    """
