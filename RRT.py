@@ -54,6 +54,15 @@ class Sampler:
             "line_based": self.line_based
         }
 
+    def clamp(self, point):
+        x, y = point
+        x, y = int(x), int(y)
+
+        # Clamp indices to valid range
+        x = max(0, min(x, self.grid_map.shape[1] - 1))
+        y = max(0, min(y, self.grid_map.shape[0] - 1))
+
+        return x, y
 
 
     def is_in_obstacle(self, point):
@@ -62,11 +71,11 @@ class Sampler:
         :param point: Point to check
         :return: True if in obstacle, False otherwise
         """
-        x, y = int(np.round(point[0])), int(np.round(point[1]))
+        x, y = self.clamp(point=point)
         return self.grid_map[y][x] == 1
 
     def distance_from_obstacle(self, point):
-        x, y = int(np.round(point[0])), int(np.round(point[1]))
+        x, y = self.clamp(point=point)
         return self.distance_map[y][x]
 
     def uniform(self):
@@ -129,7 +138,7 @@ class Sampler:
         Returns next point in the Halton low-discrepency sequence scaled by the width and height of the grid map
         :return: (float, float): A 2D point in the grid map
         """
-        point = self.halton_sampler.random(n=1)[self.halton_index]
+        point = self.halton_sampler.random(n=1)[0]
         self.halton_index += 1
         x = point[0] * self.width
         y = point[1] * self.height
@@ -201,6 +210,8 @@ class RRT:
         self.goal = goal
         self.step = step
         self.sampler = None
+        self.goal_reached = False
+        self.node_count = 1
 
     def select_sampler(self, sampler_method="uniform", iterations=50, goal_bias=0.05):
         """
@@ -302,9 +313,11 @@ class RRT:
 
             if self.valid(x_near.states, x_new):
                 self.add_state(x_new, x_near)
+                self.node_count += 1
 
-            if np.linalg.norm(x_new - self.goal) < r:
-                break
+                if np.linalg.norm(x_new - self.goal) < r:
+                    self.goal_reached = True
+                    break
 
         # Ensure kd tree rebuilt at very end
         if self.kd_tree_needs_update:
@@ -352,61 +365,141 @@ class RRT:
         """
         return sum(np.linalg.norm(self.path[i + 1] - self.path[i]) for i in range(len(self.path) - 1))
 
+class Benchmark:
+    def __init__(self, grid_map, x_init, goal, step, rebuild_freq, k, r):
+        self.grid_map = grid_map
+        self.x_init = x_init
+        self.goal = goal
+        self.step = step
+        self.rebuild_freq = rebuild_freq
+        self.results = []
+        self.k = k
+        self.r = r
 
-# ========== RUNNING TEST ==========
+    def run_test(self, sampler_method, goal_bias, sample_iterations, run_iterations):
+        success_count = 0
+        path_lengths = []
+        grow_times = []
+        build_times = []
+        node_counts =[]
+
+        for _ in range(run_iterations):
+            start = time.time()
+            rrt = RRT(x_init=self.x_init, grid_map=self.grid_map, rebuild_freq=self.rebuild_freq,
+                      goal=self.goal, step=self.step)
+            end = time.time()
+            build_times.append(end - start)
+
+            rrt.select_sampler(sampler_method=sampler_method, goal_bias=goal_bias, iterations=sample_iterations)
+
+            start = time.time()
+            rrt.grow(k=self.k, r=self.r)
+            end = time.time()
+            grow_times.append(end - start)
+
+            if rrt.goal_reached == True:
+                success_count += 1
+
+            node_counts.append(rrt.node_count)
+            nearest_to_goal = rrt.find_nearest_neighbour(self.goal)
+            rrt.get_path(goal_node=nearest_to_goal)
+            path_lengths.append(rrt.path_cost())
+
+        stats = {
+            "success_rate": success_count / run_iterations,
+            "mean_path_length": sum(path_lengths) / run_iterations,
+            "mean_grow_time": sum(grow_times) / run_iterations,
+            "mean_build_time": sum(build_times) / run_iterations,
+            "mean_nodes": sum(node_counts) / run_iterations
+        }
+
+        return stats
+
+class Plotter:
+    def __init__(self, grid_map, x_init, goal, step, rebuild_freq, k, r, sampler_method, goal_bias, iterations):
+        self.grid_map = grid_map
+        self.x_init = x_init
+        self.goal = goal
+        self.step = step
+        self.rebuild_freq = rebuild_freq
+        self.k = k
+        self.r = r
+        self.sampler_method = sampler_method
+        self.goal_bias = goal_bias
+        self.iterations = iterations
+
+
+    def plot_grid(self):
+        rrt = RRT(x_init=self.x_init, grid_map=self.grid_map, rebuild_freq=self.rebuild_freq,
+                  goal=self.goal, step=self.step)
+        rrt.select_sampler(sampler_method=self.sampler_method, goal_bias=self.goal_bias, iterations=self.iterations)
+        rrt.grow(r=self.r, k=self.k)
+        nearest_to_goal = rrt.find_nearest_neighbour(self.goal)
+        path = rrt.get_path(goal_node=nearest_to_goal)
+
+        # Draw nodes
+        xs = [node.states[0] for node in rrt.nodes]
+        ys = [node.states[1] for node in rrt.nodes]
+        plt.scatter(xs, ys, s=5, color='gray', label='Tree Nodes')
+
+        # Draw edges
+        for node in rrt.nodes:
+            if node.parent is not None:
+                x1, y1 = node.states
+                x2, y2 = node.parent.states
+                plt.plot([x1, x2], [y1, y2], 'lightblue', linewidth=0.5)
+
+        # Draw obstacles
+        for y in range(self.grid_map.shape[0]):
+            for x in range(self.grid_map.shape[1]):
+                if grid_map[y, x] == 1:
+                    plt.gca().add_patch(plt.Rectangle((x, y), 1, 1, color='black'))
+
+        # PLot
+        path = np.array(path)
+        plt.plot(path[:, 0], path[:, 1], color='red', linewidth=2, label='Path')
+        plt.scatter(*self.x_init, color='green', label='Start')
+        plt.scatter(*self.goal, color='blue', label='Goal')
+        plt.axis('equal')
+        plt.title(f"{self.sampler_method}")
+        plt.grid(True)
+        plt.show()
+
+
+
+
+    # ========== RUNNING TEST ==========
 
 if __name__ == "__main__":
 
     grid_map = np.zeros((100, 100), dtype=int)
-    start_coords = [50, 80]
-    goal_coords = np.array([90, 90])
+    start_coords = [1, 1]
+    goal_coords = np.array([95, 95])
+    rebuild_freq = 500
+    step = 1
+    sampler_method = "far"
+    goal_bias = 0.05
+    iterations = 50
+    k = 5000
+    r = 1
 
     for i in range(99):
         for j in range(99):
-            if i % 2 == 0 and j % 2 == 0:
+            if i % 4 == 0 and j % 4 == 0:
                 grid_map[i][j] = 1
 
-    grid_map[80][50] = 0
+    grid_map[95][95] = 0    # Make sure goal is not in an obstacle
 
-    # Create RRT
-    start = time.time()
-    rrt = RRT(x_init=start_coords, grid_map=grid_map, rebuild_freq=500, goal=goal_coords, step=1)
-    rrt.select_sampler(sampler_method="line_based", goal_bias=0.05, iterations=10)
-    rrt.grow(k=5000, r=0.5)
-    end = time.time()
-    print("RUn time: ", end - start)
+    benchmarker = Benchmark(grid_map=grid_map, x_init=start_coords, goal=goal_coords,
+                            step=step, rebuild_freq=rebuild_freq, k=k, r=r)
 
-    # Find path from start to goal
-    nearest_to_goal = rrt.find_nearest_neighbour(goal_coords)
-    path = rrt.get_path(nearest_to_goal)
-    smooth_path = rrt.smooth_path()
-    print(rrt.path_cost())
+    print(benchmarker.run_test(sampler_method="uniform", goal_bias=0.05, run_iterations=50, sample_iterations=50))
 
-    # Draw nodes
-    xs = [node.states[0] for node in rrt.nodes]
-    ys = [node.states[1] for node in rrt.nodes]
-    plt.scatter(xs, ys, s=5, color='gray', label='Tree Nodes')
+    """
+    plot = Plotter(grid_map=grid_map, x_init=start_coords, goal=goal_coords,
+                            step=step, rebuild_freq=rebuild_freq, k=k, r=r,
+                            sampler_method="uniform", goal_bias=0.05, iterations=50
+                   )
 
-    # Draw edges
-    for node in rrt.nodes:
-        if node.parent is not None:
-            x1, y1 = node.states
-            x2, y2 = node.parent.states
-            plt.plot([x1, x2], [y1, y2], 'lightblue', linewidth=0.5)
-
-    # Draw obstacles
-    for y in range(grid_map.shape[0]):
-        for x in range(grid_map.shape[1]):
-            if grid_map[y, x] == 1:
-                plt.gca().add_patch(plt.Rectangle((x, y), 1, 1, color='black'))
-
-    # PLot
-    path = np.array(path)
-    plt.plot(path[:, 0], path[:, 1], color='red', linewidth=2, label='Path')
-    plt.scatter(*start_coords, color='green', label='Start')
-    plt.scatter(*goal_coords, color='blue', label='Goal')
-    plt.legend()
-    plt.title("RRT with Grid Map")
-    plt.axis('equal')
-    plt.grid(True)
-    plt.show()
+    plot.plot_grid()
+    """
