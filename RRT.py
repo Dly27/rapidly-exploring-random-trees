@@ -1,9 +1,6 @@
-from grids.grids import *
-
 import numpy as np
 from scipy.spatial import cKDTree
 from sampler import Sampler, bresenham
-from numba import jit
 
 
 class Node:
@@ -29,6 +26,7 @@ class RRT:
         self.sampler = None
         self.goal_reached = False
         self.node_count = 1
+        self.best_cost = None
 
     def select_sampler(self, sampler_method="uniform", iterations=50, goal_bias=0.05):
         """
@@ -146,6 +144,44 @@ class RRT:
             self.kd_tree = cKDTree(np.array(self.node_positions))
             self.kd_tree_needs_update = False
 
+    def informed_grow(self, k, r):
+        """
+        Grows the RRT through informed sampling
+        Finds first path using grow() then perform informed sampling to find final path
+        :param k: Number of times to sample
+        :param r: Radius of goal region
+        """
+        while not self.goal_reached:
+            self.grow(k, 3*r)
+
+        print("Initial path found")
+
+        # Update path and best cost
+        goal = self.find_nearest_neighbour(self.goal)
+        start = Node(self.x_init)
+        self.get_path(goal)
+        self.best_cost = self.path_cost()
+
+        for _ in range(k):
+            # Use informed sampling
+            x_random = self.sampler.informed(start=start, goal=goal, best_cost=self.best_cost)
+
+            # Get new node
+            x_near = self.find_nearest_neighbour(x_random)
+            u = self.select_control(x_near, x_random)
+            x_new = self.new_state(x_near, u)
+
+            # Check if new node is valid
+            if self.valid(x_near.states, x_new):
+                self.add_state(x_new, x_near)
+                self.node_count += 1
+
+                if np.linalg.norm(x_new - self.goal) < r:
+                    self.get_path(self.find_nearest_neighbour(self.goal))
+                    new_cost = self.path_cost()
+                    if new_cost < self.best_cost:
+                        self.best_cost = new_cost
+
     def get_path(self, goal_node):
         """
         Finds path from start to goal
@@ -160,7 +196,6 @@ class RRT:
         self.path.reverse()
         return self.path
 
-    @jit
     def smooth_path(self):
         """
         Uses final path from get_path() and converts it into valid path with least nodes

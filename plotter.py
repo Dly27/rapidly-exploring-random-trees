@@ -7,7 +7,7 @@ from matplotlib.collections import LineCollection
 
 class Plotter:
     def __init__(self, grid_map, x_init, goal, step, rebuild_freq, k, r,
-                 sampler_method, goal_bias, iterations, smooth=False):
+                 sampler_method, goal_bias, iterations, smooth=False, informed=False):
 
         self.grid_map = grid_map
         self.x_init = x_init
@@ -20,15 +20,19 @@ class Plotter:
         self.goal_bias = goal_bias
         self.iterations = iterations
         self.smooth = smooth
+        self.informed= informed
 
 
     def plot_grid(self):
+        """
+        Initialises and grows a RRT then plots the map, RRT and final path
+        """
         rrt = RRT(
             x_init=self.x_init,
             grid_map=self.grid_map,
             rebuild_freq=self.rebuild_freq,
             goal=self.goal,
-            step=self.step
+            step=self.step,
         )
 
         rrt.select_sampler(
@@ -37,12 +41,19 @@ class Plotter:
             iterations=self.iterations
         )
 
-        rrt.grow(r=self.r, k=self.k)
+        if self.informed:
+            rrt.informed_grow(r=self.r, k=self.k)
+        else:
+            rrt.grow(r=self.r, k=self.k)
+
         nearest_to_goal = rrt.find_nearest_neighbour(self.goal)
         path = rrt.get_path(goal_node=nearest_to_goal)
 
         if self.smooth:
             path = rrt.smooth_path()
+
+        path_cost = rrt.path_cost()
+        print(f"Path cost: {path_cost}")
 
         fig, ax = plt.subplots()
 

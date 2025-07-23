@@ -5,17 +5,22 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 
 def run_rrt(params):
     """
-    Runs RRT once
+    Runs RRT once and measures perfomance metrics for this single run
     :return: array: Relevent performance metrics
     """
-    grid_map, x_init, goal, step, rebuild_freq, k, r, sampler_method, goal_bias, sample_iterations = params
+    grid_map, x_init, goal, step, rebuild_freq, k, r, informed, sampler_method, goal_bias, sample_iterations = params
 
     rrt = RRT(x_init=x_init, grid_map=grid_map, rebuild_freq=rebuild_freq, goal=goal, step=step)
     rrt.select_sampler(sampler_method=sampler_method, goal_bias=goal_bias, iterations=sample_iterations)
 
-    grow_start = time.perf_counter()
-    rrt.grow(k=k, r=r)
-    grow_end = time.perf_counter()
+    if informed:
+        grow_start = time.perf_counter()
+        rrt.informed_grow(k=k, r=r)
+        grow_end = time.perf_counter()
+    else:
+        grow_start = time.perf_counter()
+        rrt.grow(k=k, r=r)
+        grow_end = time.perf_counter()
 
     goal_reached = rrt.goal_reached
     node_count = rrt.node_count
@@ -36,7 +41,7 @@ def run_rrt(params):
 
 
 class Benchmark:
-    def __init__(self, grid_map, x_init, goal, step, rebuild_freq, k, r):
+    def __init__(self, grid_map, x_init, goal, step, rebuild_freq, k, r, informed=False):
         self.grid_map = grid_map
         self.x_init = x_init
         self.goal = goal
@@ -46,6 +51,7 @@ class Benchmark:
         self.r = r
         self.results = []
         self.stats = None
+        self.informed = informed
 
     def test(self, sampler_method, goal_bias, sample_iterations, test_iterations):
         """
@@ -61,6 +67,7 @@ class Benchmark:
                 self.rebuild_freq,
                 self.k,
                 self.r,
+                self.informed,
                 sampler_method,
                 goal_bias,
                 sample_iterations

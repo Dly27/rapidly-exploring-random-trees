@@ -148,6 +148,57 @@ class Sampler:
 
         return np.array([x, y])
 
+    def informed(self, start, goal, best_cost):
+        """
+        Calculates properties of an ellipsoid based on the start and end point
+        Samples a point from a unit circle
+        Transforms the unit circle / sampled point into an ellipsoid as the final sample
+        :param start: Start node
+        :param goal: Goal node
+        :param best_cost: Lowest path cost found so far in RRT
+        :return: array: Sample point
+        """
+        # Ellipsoid properties
+        start, goal = start.states, goal.states
+        c_min = np.linalg.norm(goal - start)
+        centre = (start + goal) / 2
+
+        # Direction vector from start to goal
+        a1 = (goal - start) / c_min
+
+        # Create a basis for the ellipsoid using a rotation matrix C
+        # First axis is a1, other axes are perpendicular directions
+
+        # Construct orthonormal basis
+        dim = start.shape[0]
+        U, _, Vt = np.linalg.svd(np.eye(dim))  # identity matrix for base axes
+
+        # Rotation matrix C to align the x-axis to a1
+        C = np.zeros((dim, dim))
+        C[:, 0] = a1
+        C[:, 1:] = U[:, 1:]
+
+        # Radii of the ellipsoid axes
+        r1 = best_cost / 2
+        if r1 ** 2 - (c_min / 2) ** 2 < 0:
+            # Safety fallback
+            r2 = 0
+        else:
+            r2 = np.sqrt(r1 ** 2 - (c_min / 2) ** 2)
+        radii = np.array([r1 * 0.5] + [r2 * 0.5] * (dim - 1))
+
+        def sample_unit_n_ball(d):
+            x = np.random.normal(0, 1, d)
+            x /= np.linalg.norm(x)
+            radius = np.random.rand() ** (1.0 / d)
+            return radius * x
+
+        x_ball = sample_unit_n_ball(dim)
+
+        # Scale by radii and rotate
+        sample = centre + C @ (radii * x_ball)
+        return sample
+
     def line_based(self):
         """
         Samples several lines and picks the midpoint of the line with the least obstacle intersections.
