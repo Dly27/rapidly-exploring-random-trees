@@ -3,6 +3,7 @@ from grids.grids import *
 import numpy as np
 from scipy.spatial import cKDTree
 from sampler import Sampler, bresenham
+from numba import jit
 
 
 class Node:
@@ -159,6 +160,7 @@ class RRT:
         self.path.reverse()
         return self.path
 
+    @jit
     def smooth_path(self):
         """
         Uses final path from get_path() and converts it into valid path with least nodes
