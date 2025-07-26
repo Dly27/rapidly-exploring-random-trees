@@ -81,7 +81,11 @@ class Plotter:
         ax.scatter(*self.x_init, color='green', label='Start')
         ax.scatter(*self.goal, color='blue', label='Goal')
 
-        ax.set_title(f"{self.sampler_method}")
+        if self.informed:
+            ax.set_title("Informed")
+        else:
+            ax.set_title(f"{self.sampler_method}")
+
         ax.set_aspect('equal')
         ax.grid(True)
         ax.legend()

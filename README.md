@@ -52,6 +52,25 @@ Benchmarker:
 - Utilises parallesiation to benchmark a RRT in batches
 - Currently gives you information on: Success rate, mean path length, mean RRT growth time, mean number of nodes
   
+## Example outputs
+
+Below are the two plots for informed sampling and uniform sampling based RRTs
+
+<p align="center">
+  <img src="assets/Informed_plot.png" alt="Informed RRT" width="500">
+</p>
+
+<p align="center">
+  <img src="assets/Uniform_plot.png" alt="Uniform RRT" width="500">
+</p>
+
+Here is also an example of a smoothed uniform RRT plot
+
+<p align="center">
+  <img src="assets/Uniform_smoothed_plot.png" alt="Smoothed Uniform RRT" width="500">
+</p>
+
+
 
 
   

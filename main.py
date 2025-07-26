@@ -14,12 +14,12 @@ if __name__ == "__main__":
     goal_coords = np.array([376, 240])
     rebuild_freq = 500
     step = 10
-    sampler_method = "goal_biased"
+    sampler_method = "uniform"
     goal_bias = 0.05
     iterations = 50
     k = 5000
     r = 3
-    grid_map[378][378] = 0  # Make sure goal is not in an obstacle
+    grid_map[376][240] = 0  # Make sure goal is not in an obstacle
     test_iterations = 10
     sample_iterations = 50
 
@@ -33,14 +33,15 @@ if __name__ == "__main__":
                      sample_iterations=sample_iterations)
 
     """
+
     plot = Plotter(grid_map=grid_map, x_init=start_coords, goal=goal_coords,
                    step=step, rebuild_freq=rebuild_freq, k=k, r=r,
                    sampler_method=sampler_method, goal_bias=goal_bias, iterations=iterations,
-                   smooth=True, informed=True
+                   smooth=False, informed=True
                    )
 
     plot.plot_grid()
-    
+
     plot2 = Plotter(grid_map=grid_map, x_init=start_coords, goal=goal_coords,
                    step=step, rebuild_freq=rebuild_freq, k=k, r=r,
                    sampler_method=sampler_method, goal_bias=goal_bias, iterations=iterations,

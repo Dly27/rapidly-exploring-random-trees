@@ -152,7 +152,7 @@ class RRT:
         :param r: Radius of goal region
         """
         while not self.goal_reached:
-            self.grow(k, 3*r)
+            self.grow(k, r)
 
         print("Initial path found")
 
