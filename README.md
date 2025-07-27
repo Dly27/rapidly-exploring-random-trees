@@ -26,7 +26,7 @@ cd rapidly-exploring-random-trees
 
 Install with: 
 ```bash
-pip install numpy matplotlib scipy
+poetry install   
 python rrt.py
 ```
 
