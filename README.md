@@ -8,12 +8,18 @@ This project implements the rapidly-exploring random tree (RRT) algorithm for pa
 ## Requirements
 
 - Python 3.11
-- `numpy`, `scipy`, `matplotlib`
+- Poetry
+
+Clone the repo:
+```commandline
+git clone https://github.com/Dly27/rapidly-exploring-random-trees.git
+cd rapidly-exploring-random-trees
+```
 
 Install with: 
-```bash
-pip install numpy matplotlib scipy
-python rrt.py
+```commandline
+pip poetry install
+python main.py
 ```
 
 ## Features
