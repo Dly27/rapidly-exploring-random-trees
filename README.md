@@ -25,14 +25,14 @@ cd rapidly-exploring-random-trees
 ```
 
 Install with: 
-```commandline
-pip poetry install
-python main.py
+```bash
+pip install numpy matplotlib scipy
+python rrt.py
 ```
 
 ## Features
 
-Main algorithm:
+Main algorithm:<br>
 
 - Implements RRT with various sampling techniques
 - Fast nearest-neighbor lookup using SciPy’s cKDTree
@@ -41,12 +41,12 @@ Main algorithm:
 - Path smoothing via shortcutting, maintaining obstacle safety
 - Path cost computation using Euclidean distance
 
-Environment:
+Environment:<br>
 
 - 2D grid map, `grid_map` with obstacles determined by binary encoding, where 0 indicates free space and 1 indicates obstacles
 - Uses maps based on real world map data from: [movingai](https://movingai.com/benchmarks/grids.html)
 
-Sampling:
+Sampling:<br>
 
 - Uniform: Point randomly sampled from free space
 - Goal biasing: Goal point is used as the sample point
@@ -56,11 +56,11 @@ Sampling:
 - Halton: Samples a point using Halton low-discrepency sequence
 - Informed: Uses sampling method based on the paper: [Karaman, S., & Frazzoli, E. (2013). Sampling-based Algorithms for Optimal Motion Planning](https://www.ri.cmu.edu/pub_files/2014/9/TR-2013-JDG003.pdf)
 
-Visualisation:
+Visualisation:<br>
 
 - Plot displaying: nodes, edges, final path, obstacles, start and end points
 
-Benchmarker:
+Benchmarker:<br>
 
 - Benchmarker class to measure various performance metrics for a given RRT
 - Utilises parallesiation to benchmark a RRT in batches
@@ -85,6 +85,15 @@ Here is also an example of a smoothed uniform RRT plot
 </p>
 
 
+## Benchmarker
+The `Benchmarker` class evaluates the performance of your RRT implementation using parallelized batch runs.
 
+Metrics collected:
+-  Success rate (how often a path to the goal is found)
+-  Mean path length
+-  Mean time to grow the tree
+-  Mean number of nodes in the final tree
+
+Note: Currently supports benchmarking a single sampling method per batch.
 
   
