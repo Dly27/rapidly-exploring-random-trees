@@ -4,6 +4,14 @@ This project implements the rapidly-exploring random tree (RRT) algorithm for pa
 
 - [LaValle, 1998 - Rapidly-exploring random trees: A new tool for path planning](https://msl.cs.illinois.edu/~lavalle/papers/Lav98c.pdf)
 - [Karaman & Frazzoli, 2011 - Sampling-based algorithms for optimal motion planning](https://arxiv.org/pdf/1105.1186)
+ 
+## Table of Contents
+
+- [Requirements](#requirements)
+- [Features](#features)
+- [Example Outputs](#example-outputs)
+- [Usage](#usage)
+- [Benchmarker](#benchmarker)
 
 ## Requirements
 
