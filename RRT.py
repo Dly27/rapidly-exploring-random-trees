@@ -11,7 +11,7 @@ class Node:
 
 class RRT:
     def __init__(self, x_init, grid_map, rebuild_freq, goal, step):
-        self.x_init = np.array(x_init)
+        self.x_init = np.array(x_init)  # x_init is the 2D starting position
         self.nodes = [Node(self.x_init)]
         self.grid_map = np.array(grid_map)
         self.map_height, self.map_width = self.grid_map.shape
@@ -61,7 +61,7 @@ class RRT:
     def find_nearest_neighbour(self, x_random):
         """
         Uses cKDTree to find the nearest node in RRT to x_random.
-        Rebuilds cKDTree if neccesary
+        Rebuilds cKDTree if necessary
         :param x_random: Randomly sampled point on grid map
         :return: Object: Closest node to x_random
         """

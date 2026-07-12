@@ -30,7 +30,7 @@ def load_map(file):
     """
     Loads .map file and converts into desired grid map array format
     :param file: The file loaded from \street-map
-    :return: array: The grid map used for RRT
+    :return: numpy array: The grid map used for RRT
     """
     with open(file, "r") as f:
         lines = f.readlines()
