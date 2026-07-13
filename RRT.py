@@ -28,6 +28,10 @@ class RRT:
         self.node_count = 1
         self.best_cost = None
 
+        # Check if there is a goal
+        if self.goal is None:
+            raise ValueError("Goal point not specified.")
+
     def select_sampler(self, sampler_method="uniform", iterations=50, goal_bias=0.05):
         """
         Creates sampler object and sets it to self.sampler
@@ -124,6 +128,9 @@ class RRT:
         :param k: Number of times to sample points
         :param r: Radius to determine whether a node is close enough to the goal point
         """
+        if self.sampler is None:
+            raise RuntimeError("Sampler not selected.")
+
         # Use algorithm from the paper
         for _ in range(k):
             x_random = self.sampler.sample()
@@ -144,15 +151,29 @@ class RRT:
             self.kd_tree = cKDTree(np.array(self.node_positions))
             self.kd_tree_needs_update = False
 
-    def informed_grow(self, k, r):
+    def informed_grow(self, k, r, limit=10):
         """
         Grows the RRT through informed sampling
         Finds first path using grow() then perform informed sampling to find final path
         :param k: Number of times to sample
         :param r: Radius of goal region
+        :param limit: limit for number of times to run grow to find initial path
         """
-        while not self.goal_reached:
+        # Check valid limit entered
+        if limit <= 0:
+            raise ValueError("Select limit greater than 0.")
+
+
+        # Find the initial path
+        attempts = 0
+        while not self.goal_reached and attempts < limit:
             self.grow(k, r)
+            attempts += 1
+
+        if not self.goal_reached:
+            raise RuntimeError(
+                f"Failed to find initial path after {limit} attempts."
+            )
 
         print("Initial path found")
 
@@ -162,6 +183,7 @@ class RRT:
         self.get_path(goal)
         self.best_cost = self.path_cost()
 
+        # Find a better path via informed sampling
         for _ in range(k):
             # Use informed sampling
             x_random = self.sampler.informed(start=start, goal=goal, best_cost=self.best_cost)
