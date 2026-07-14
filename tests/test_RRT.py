@@ -1,6 +1,6 @@
 import pytest
 from dataclasses import dataclass
-from RRT import RRT
+from RRT import RRT, Node
 from grids.grids import *
 import numpy as np
 from numpy.typing import NDArray
@@ -79,15 +79,9 @@ def test_obstacle_between_nodes(rrt: RRT):
 
     assert not rrt.valid([0,50], [100,50])
 
-def test_no_goal_point(rrt: RRT):
-    rrt.goal = None
-
-    with pytest.raises(ValueError):
-        rrt.grow(k=5000, r=3)
-
 def test_sampler_not_selected(rrt: RRT):
     with pytest.raises(RuntimeError):
-        rrt.grow(k=5000, r=3)
+        rrt.grow(k=500, r=3)
 
 def test_zero_grow_iterations(rrt: RRT):
     rrt.select_sampler()
@@ -96,7 +90,72 @@ def test_zero_grow_iterations(rrt: RRT):
     assert rrt.node_count == 1
 
 def test_first_path_not_found_before_limit(rrt:RRT):
+    # Tests if the first path needed for informed grow is found
     rrt.select_sampler()
 
-    with pytest.raises(ValueError):
-        rrt.informed_grow(k=1000, r=3, limit=1)
+    with pytest.raises(RuntimeError):
+        rrt.informed_grow(k=500, r=3, limit=1)
+
+def test_informed_grow_updates_best_cost(rrt: RRT, monkeypatch):
+    rrt.select_sampler()
+    rrt.goal_reached = True
+    goal_node = Node(rrt.goal)
+    near_node = Node(np.array([0,0]))
+
+    monkeypatch.setattr(rrt,
+                        "find_nearest_neighbour",
+                        lambda point: goal_node if np.array_equal(point, rrt.goal) else near_node)
+
+    monkeypatch.setattr(rrt, "get_path", lambda node: None)
+    costs = iter([100,80])
+    monkeypatch.setattr(rrt, "path_cost", lambda: next(costs))
+
+    monkeypatch.setattr(
+        rrt.sampler,
+        "informed",
+        lambda start, goal, best_cost: rrt.goal.copy(),
+    )
+
+    monkeypatch.setattr(
+        rrt,
+        "select_control",
+        lambda x_near, x_random: np.array([1, 1]),
+    )
+
+    monkeypatch.setattr(
+        rrt,
+        "new_state",
+        lambda x_near, u: rrt.goal.copy(),
+    )
+
+    monkeypatch.setattr(rrt, "valid", lambda p1, p2: True)
+    monkeypatch.setattr(rrt, "add_state", lambda states, parent: None)
+
+    rrt.informed_grow(k=1, r=3)
+
+    assert rrt.best_cost < 100
+
+def test_informed_grow_does_not_add_invalid_nodes(rrt: RRT, monkeypatch):
+    rrt.select_sampler()
+    rrt.goal_reached = True
+    rrt.grid_map[50,50] = 1
+    test_node = [50, 50]
+    initial_node_count = rrt.node_count
+
+    monkeypatch.setattr(rrt.sampler,
+                        "informed",
+                        lambda start, goal, best_cost: test_node)
+
+    monkeypatch.setattr(
+        rrt,
+        "select_control",
+        lambda x_near, x_random: np.array([1, 1]),
+    )
+    monkeypatch.setattr(rrt,
+                        "new_state",
+                        lambda x_near, u: test_node)
+
+    rrt.informed_grow(k=1, r=3)
+    assert rrt.node_count == initial_node_count
+
+

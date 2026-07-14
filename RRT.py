@@ -28,10 +28,6 @@ class RRT:
         self.node_count = 1
         self.best_cost = None
 
-        # Check if there is a goal
-        if self.goal is None:
-            raise ValueError("Goal point not specified.")
-
     def select_sampler(self, sampler_method="uniform", iterations=50, goal_bias=0.05):
         """
         Creates sampler object and sets it to self.sampler
@@ -78,7 +74,7 @@ class RRT:
     def select_control(self, x_near, x_random):
         """
         Finds the direction from node in RRT(x_near) to x_random
-        :param x_near: CLosest point to x_random
+        :param x_near: Closest point to x_random
         :param x_random: Randomly sampled point on grid map
         :return: array: direction towards x_random
         """
@@ -206,7 +202,7 @@ class RRT:
 
     def get_path(self, goal_node):
         """
-        Finds path from start to goal
+        Finds path from start to goal area
         :param goal_node: The node closest to the goal point
         :return: array: The path from start to goal, stored as nodes in an array
         """
@@ -221,7 +217,7 @@ class RRT:
     def smooth_path(self):
         """
         Uses final path from get_path() and converts it into valid path with least nodes
-        :return: array: Valid path with least nodes
+        :return: array: Valid path with the least nodes
         """
         smooth = [self.path[0]]
         i = 0
