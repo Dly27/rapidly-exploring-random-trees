@@ -6,7 +6,7 @@ from RRT import RRT
 from matplotlib.collections import LineCollection
 
 class Plotter:
-    def __init__(self, grid_map, x_init, goal, step, rebuild_freq, k, r,
+    def __init__(self, grid_map, x_init, goal, step, rebuild_freq, k, r, limit,
                  sampler_method, goal_bias, iterations, smooth=False, informed=False):
 
         self.grid_map = grid_map
@@ -16,6 +16,7 @@ class Plotter:
         self.rebuild_freq = rebuild_freq
         self.k = k
         self.r = r
+        self.limit = limit
         self.sampler_method = sampler_method
         self.goal_bias = goal_bias
         self.iterations = iterations
@@ -42,7 +43,7 @@ class Plotter:
         )
 
         if self.informed:
-            rrt.informed_grow(r=self.r, k=self.k)
+            rrt.informed_grow(r=self.r, k=self.k, limit=self.limit)
         else:
             rrt.grow(r=self.r, k=self.k)
 

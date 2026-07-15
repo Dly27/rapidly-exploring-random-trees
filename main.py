@@ -19,6 +19,7 @@ if __name__ == "__main__":
     iterations = 50
     k = 5000
     r = 3
+    limit = 10
     grid_map[376][240] = 0  # Make sure goal is not in an obstacle
     test_iterations = 10
     sample_iterations = 50
@@ -35,7 +36,7 @@ if __name__ == "__main__":
     """
 
     plot = Plotter(grid_map=grid_map, x_init=start_coords, goal=goal_coords,
-                   step=step, rebuild_freq=rebuild_freq, k=k, r=r,
+                   step=step, rebuild_freq=rebuild_freq, k=k, r=r, limit=limit,
                    sampler_method=sampler_method, goal_bias=goal_bias, iterations=iterations,
                    smooth=False, informed=True
                    )
@@ -43,7 +44,7 @@ if __name__ == "__main__":
     plot.plot_grid()
 
     plot2 = Plotter(grid_map=grid_map, x_init=start_coords, goal=goal_coords,
-                   step=step, rebuild_freq=rebuild_freq, k=k, r=r,
+                   step=step, rebuild_freq=rebuild_freq, k=k, r=r, limit=limit,
                    sampler_method=sampler_method, goal_bias=goal_bias, iterations=iterations,
                    smooth=True,
                    )
