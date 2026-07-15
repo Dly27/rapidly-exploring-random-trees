@@ -30,8 +30,8 @@ class Sampler:
         self.sampler_type = sampler_method
         self.goal = goal
         self.goal_bias = goal_bias
-        self.height = height
-        self.width = width
+        self.height = height  # Map height
+        self.width = width    # Map width
         self.grid_map = grid_map
         self.distance_map = distance_transform_edt((self.grid_map == 0))
         self.iterations = iterations
@@ -58,15 +58,15 @@ class Sampler:
         x, y = int(x), int(y)
 
         # Clamp indices to valid range
-        x = max(0, min(x, self.grid_map.shape[1] - 1))
-        y = max(0, min(y, self.grid_map.shape[0] - 1))
+        x = max(0, min(x, self.grid_map.shape[1]))
+        y = max(0, min(y, self.grid_map.shape[0]))
 
         return x, y
 
 
     def is_in_obstacle(self, point):
         """
-        Checks wheteher a given point is in an obstacle
+        Checks whether a given point is in an obstacle
         :param point: Point to check
         :return: True if in obstacle, False otherwise
         """
@@ -77,7 +77,7 @@ class Sampler:
         """
         Finds distance from a point to the closest obstacle
         :param point: Sampled point
-        :return: float: Distance from point to closest obstacle
+        :return: float: Distance from point to the closest obstacle
         """
         x, y = self.clamp(point=point)
         return self.distance_map[y][x]
@@ -95,7 +95,7 @@ class Sampler:
         point is uniformly sampled otherwise
         :return: (float, float): A 2D point in the grid map
         """
-        if np.random.rand() < self.goal_bias:
+        if np.random.rand() <= self.goal_bias:
             return self.goal
         else:
             return self.uniform()
