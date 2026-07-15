@@ -158,4 +158,21 @@ def test_informed_grow_does_not_add_invalid_nodes(rrt: RRT, monkeypatch):
     rrt.informed_grow(k=1, r=3)
     assert rrt.node_count == initial_node_count
 
+def test_smooth_path_removes_unnecessary_nodes(rrt: RRT, monkeypatch):
+    start = np.array([0, 0])
+    point_1 = np.array([1, 1])
+    point_2 = np.array([2, 2])
+    goal = np.array([3, 3])
 
+    rrt.path = [start, point_1, point_2, goal]
+
+    monkeypatch.setattr(
+        rrt,
+        "valid",
+        lambda p1, p2: True,
+    )
+
+    smoothed_path = rrt.smooth_path()
+
+    assert np.array_equal(smoothed_path[0], start)
+    assert np.array_equal(smoothed_path[1], goal)
