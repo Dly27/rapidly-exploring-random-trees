@@ -139,7 +139,7 @@ class Sampler:
 
     def halton(self):
         """
-        Returns next point in the Halton low-discrepency sequence scaled by the width and height of the grid map
+        Returns next point in the Halton low-discrepancy sequence scaled by the width and height of the grid map
         :return: (float, float): A 2D point in the grid map
         """
         point = self.halton_sampler.random(n=1)[0]

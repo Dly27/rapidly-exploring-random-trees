@@ -2,6 +2,7 @@ import pytest
 from dataclasses import dataclass
 from sampler import *
 import numpy as np
+from RRT import Node
 from numpy.typing import NDArray
 from grids.grids import *
 
@@ -99,11 +100,9 @@ def test_goal_biased(sampler: Sampler, monkeypatch):
     assert np.array_equal(sampler.goal_biased(), sampler.goal)
 
 def test_obstacle_biased(sampler: Sampler, monkeypatch):
-    for i in range(3):
-        for j in range(3):
-            sampler.grid_map[i, j] = 1
-
+    sampler.grid_map[:3, :3] = 1
     sampler.grid_map[1, 1] = 0
+
     p1 = np.array([1.5,1.5])
     sampler.distance_map = distance_transform_edt((sampler.grid_map == 0))
 
@@ -113,15 +112,13 @@ def test_obstacle_biased(sampler: Sampler, monkeypatch):
     assert not np.array_equal(sampler.obstacle_biased(), p1)
 
 def test_bridge(sampler: Sampler, monkeypatch):
-    for i in range(3):
-        for j in range(3):
-            sampler.grid_map[i, j] = 1
-
+    sampler.grid_map[:3, :3] = 1
     sampler.grid_map[1, 1] = 0
+
     sampler.distance_map = distance_transform_edt((sampler.grid_map == 0))
 
-    p1 = np.array([0.5, 1.5])
-    offset = [1, 1]
+    p1 = np.array([0.5, 0.5])
+    offset = np.array([2, 2])
     p2 = p1 + offset
     midpoint = (p1 + p2) / 2
 
@@ -131,5 +128,59 @@ def test_bridge(sampler: Sampler, monkeypatch):
 
     test_midpoint = sampler.bridge()
     print(f"Test midpoint: {test_midpoint}, Expected midpoint: {midpoint}")
-    assert np.array_equal(test_midpoint, midpoint)
+    assert np.allclose(test_midpoint, midpoint)
 
+def test_far_from_obstacle(sampler: Sampler, monkeypatch):
+    points = [np.array([1, 1]), np.array([2, 2]), np.array([3, 3])]
+    distances = {(1, 1): 2, (2, 2): 5, (3, 3): 1.0}
+
+    monkeypatch.setattr(sampler, "iterations", len(points))
+    point_iter = iter(points)
+
+    monkeypatch.setattr(sampler, "uniform", lambda: next(point_iter))
+    monkeypatch.setattr(sampler,"distance_from_obstacle", lambda point: distances[tuple(point)])
+
+    assert np.array_equal(sampler.far_from_obstacle(), np.array([2.0, 2.0]))
+
+def test_halton(sampler: Sampler, monkeypatch):
+    monkeypatch.setattr(sampler.halton_sampler, "random", lambda n: [[1, 1]])
+    point = np.array([sampler.width, sampler.height])
+
+    assert np.array_equal(point, sampler.halton())
+
+def test_informed(sampler: Sampler, monkeypatch):
+    start = Node(np.array([0, 0]))
+    goal = Node(np.array([4, 0]))
+    best_cost = 6
+
+    monkeypatch.setattr(np.random,"normal", lambda *args, **kwargs: np.array([1.0, 0.0]))
+    monkeypatch.setattr(np.random, "rand", lambda: 1)
+    result = sampler.informed(start, goal, best_cost)
+    expected = np.array([3.5, 0])  # Use formula
+
+    assert np.allclose(result, expected)
+
+def test_line_based(sampler: Sampler, monkeypatch):
+    sampler.grid_map = np.zeros((5, 5), dtype=np.uint8)
+    sampler.width = 5
+    sampler.height = 5
+    sampler.iterations = 2
+
+    sampler.grid_map[0, 1:4] = 1
+    points = iter([0, 0, 4, 0, 0, 2, 4, 2])
+    monkeypatch.setattr(np.random, "uniform", lambda *args, **kwargs: next(points))
+
+    expected_midpoint = np.array([2, 2])
+    test_midpoint = sampler.line_based()
+
+    assert np.array_equal(test_midpoint, expected_midpoint)
+
+
+def test_sample(sampler: Sampler, monkeypatch):
+    expected_point = np.array([1.5, 2.5])
+    sampler.sampler_type = "uniform"
+    monkeypatch.setattr(sampler, "uniform", lambda: expected_point)
+    sampler.methods["uniform"] = sampler.uniform
+    test_point = sampler.sample()
+
+    assert np.array_equal(test_point, expected_point)
