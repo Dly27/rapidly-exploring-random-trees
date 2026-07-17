@@ -92,5 +92,5 @@ class Plotter:
         ax.legend()
         plt.show()
 
-    def close_plots(self)
+    def close_plots(self):
         plt.close("all")
