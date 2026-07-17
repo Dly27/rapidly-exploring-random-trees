@@ -33,3 +33,4 @@ def test_plotter_initialisation(plotter: Plotter):
 
 def test_plot_grid_runs(plotter: Plotter):
     plotter.plot_grid()
+    plotter.close_plots()

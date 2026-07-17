@@ -91,3 +91,6 @@ class Plotter:
         ax.grid(True)
         ax.legend()
         plt.show()
+
+    def close_plots(self)
+        plt.close("all")
