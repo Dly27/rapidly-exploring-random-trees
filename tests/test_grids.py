@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-import grids.grids
+from grids import grids
 
 def test_random_cluttered_map(monkeypatch):
     monkeypatch.setattr(np.random, "randint", lambda *args: 1)
