@@ -1,4 +1,4 @@
-from RRT import RRT
+from rrt.RRT import RRT
 import numpy as np
 import time
 from concurrent.futures import ProcessPoolExecutor, as_completed

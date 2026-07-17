@@ -1,5 +1,5 @@
 import pytest
-from plotter import Plotter
+from rrt.plotter import Plotter
 import numpy as np
 
 

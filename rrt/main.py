@@ -5,11 +5,10 @@
 
 from grids.grids import *
 import numpy as np
-from plotter import Plotter
-from benchmarker import Benchmark
+from rrt.plotter import Plotter
 
 if __name__ == "__main__":
-    grid_map = load_map("grids\street-map\London_1_512.map")
+    grid_map = load_map("../grids/street-map/London_1_512.map")
     start_coords = [1, 1]
     goal_coords = np.array([376, 240])
     rebuild_freq = 500

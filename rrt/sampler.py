@@ -1,6 +1,4 @@
 import numpy as np
-import matplotlib.pyplot as plt
-from scipy.spatial import cKDTree
 from scipy.ndimage import distance_transform_edt
 from scipy.stats.qmc import Halton
 

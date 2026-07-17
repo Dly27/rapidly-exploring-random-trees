@@ -1,8 +1,7 @@
 import pytest
 from dataclasses import dataclass
-from sampler import *
-import numpy as np
-from RRT import Node
+from rrt.sampler import *
+from rrt.RRT import Node
 from numpy.typing import NDArray
 from grids.grids import *
 from pathlib import Path

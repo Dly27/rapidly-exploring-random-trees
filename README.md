@@ -27,7 +27,7 @@ cd rapidly-exploring-random-trees
 Install with: 
 ```bash
 poetry install   
-python rrt.py
+poetry run python -m rrt.main
 ```
 
 ## Features

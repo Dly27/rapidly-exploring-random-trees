@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.spatial import cKDTree
-from sampler import Sampler, bresenham
+from rrt.sampler import Sampler, bresenham
 
 
 class Node:

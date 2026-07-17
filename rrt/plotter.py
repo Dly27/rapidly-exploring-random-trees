@@ -1,8 +1,6 @@
-from grids.grids import *
-
 import numpy as np
 import matplotlib.pyplot as plt
-from RRT import RRT
+from rrt.RRT import RRT
 from matplotlib.collections import LineCollection
 
 class Plotter:

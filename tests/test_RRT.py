@@ -1,6 +1,6 @@
 import pytest
 from dataclasses import dataclass
-from RRT import RRT, Node
+from rrt.RRT import RRT, Node
 from grids.grids import *
 import numpy as np
 from numpy.typing import NDArray
