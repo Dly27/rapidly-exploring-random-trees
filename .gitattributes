@@ -1,0 +1,18 @@
+# Normalize line endings automatically.
+# Git stores text files with LF internally and checks them out
+# with your OS's native endings. This stops the whole repo from
+# showing as "modified" just because of CRLF vs LF differences.
+* text=auto
+
+# Treat map data as text so it gets normalized too.
+*.map text
+
+# Python source is always LF.
+*.py text eol=lf
+
+# Binary files: never touch these.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.pdf binary
