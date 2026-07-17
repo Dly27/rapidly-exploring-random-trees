@@ -1,4 +1,8 @@
 # Rapidly-exploring random trees path planning
+![Build Status](https://github.com/Dly27/rapidly-exploring-random-trees/actions/workflows/test.yml/badge.svg)
+![Python](https://img.shields.io/badge/python-3.11+-blue.svg)
+![License](https://img.shields.io/badge/license-MIT-green.svg)
+![Poetry](https://img.shields.io/badge/Poetry-managed-60A5FA?logo=poetry)
 
 This project implements the rapidly-exploring random tree (RRT) algorithm for path planning on a 2D space with obstacles, based on:
 
