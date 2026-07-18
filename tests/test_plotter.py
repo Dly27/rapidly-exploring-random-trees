@@ -1,6 +1,7 @@
-import pytest
-from rrt.plotter import Plotter
 import numpy as np
+import pytest
+
+from rrt.plotter import Plotter
 
 
 @pytest.fixture
@@ -30,6 +31,7 @@ def test_plotter_initialisation(plotter: Plotter):
     assert plotter.sampler_method == "uniform"
     assert not plotter.smooth
     assert not plotter.informed
+
 
 def test_plot_grid_runs(plotter: Plotter):
     plotter.plot_grid()

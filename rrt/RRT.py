@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.spatial import cKDTree
+
 from rrt.sampler import Sampler, bresenham
 
 
@@ -32,14 +33,15 @@ class RRT:
         """
         Creates sampler object and sets it to self.sampler
         """
-        self.sampler = Sampler(sampler_method=sampler_method,
-                               iterations=iterations,
-                               grid_map=self.grid_map,
-                               goal=self.goal,
-                               goal_bias=goal_bias,
-                               height=self.map_height,
-                               width=self.map_width
-                               )
+        self.sampler = Sampler(
+            sampler_method=sampler_method,
+            iterations=iterations,
+            grid_map=self.grid_map,
+            goal=self.goal,
+            goal_bias=goal_bias,
+            height=self.map_height,
+            width=self.map_width,
+        )
 
     def add_state(self, states, parent):
         """
@@ -95,7 +97,8 @@ class RRT:
 
     def valid(self, p1, p2=None):
         """
-        Checks whether a point is in an obstacle or if and edge between two points intersect with an obstacle
+        Checks whether a point is in an obstacle or if and edge between
+        two points intersect with an obstacle
         :param p1: Point 1
         :param p2: Point 2
         :return: boolean: Whether the point is valid(not intersected with obstacle)
@@ -159,7 +162,6 @@ class RRT:
         if limit <= 0:
             raise ValueError("Select limit greater than 0.")
 
-
         # Find the initial path
         attempts = 0
         while not self.goal_reached and attempts < limit:
@@ -167,9 +169,7 @@ class RRT:
             attempts += 1
 
         if not self.goal_reached:
-            raise RuntimeError(
-                f"Failed to find initial path after {limit} attempts."
-            )
+            raise RuntimeError(f"Failed to find initial path after {limit} attempts.")
 
         print("Initial path found")
 
@@ -239,5 +239,6 @@ class RRT:
         Calculates the distance of the path from start to goal
         :return: float: Distance of final path
         """
-        return sum(np.linalg.norm(self.path[i + 1] - self.path[i]) for i in range(len(self.path) - 1))
-
+        return sum(
+            np.linalg.norm(self.path[i + 1] - self.path[i]) for i in range(len(self.path) - 1)
+        )

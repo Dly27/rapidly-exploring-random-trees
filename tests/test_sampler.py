@@ -1,10 +1,15 @@
-import pytest
 from dataclasses import dataclass
-from rrt.sampler import *
-from rrt.RRT import Node
-from numpy.typing import NDArray
-from grids.grids import *
 from pathlib import Path
+
+import numpy as np
+import pytest
+from numpy.typing import NDArray
+from scipy.ndimage import distance_transform_edt
+
+from grids.grids import load_map
+from rrt.RRT import Node
+from rrt.sampler import Sampler
+
 
 @dataclass
 class SampleRun:
@@ -21,6 +26,7 @@ class SampleRun:
     test_iterations: int
     sample_iterations: int
     test_map: np.ndarray
+
 
 @pytest.fixture
 def sample_run() -> SampleRun:
@@ -44,6 +50,7 @@ def sample_run() -> SampleRun:
         test_map=load_map(map_path),
     )
 
+
 @pytest.fixture
 def sampler(sample_run: SampleRun):
     return Sampler(
@@ -53,23 +60,26 @@ def sampler(sample_run: SampleRun):
         height=len(sample_run.grid_map),
         width=len(sample_run.grid_map[0]),
         grid_map=sample_run.grid_map,
-        iterations=50
+        iterations=50,
     )
 
+
 def test_clamp(sampler: Sampler):
-    point1 = (sampler.width + 0.6,sampler.height + 0.6)
+    point1 = (sampler.width + 0.6, sampler.height + 0.6)
     point2 = (-0.5, -0.5)
-    x1,y1 = sampler.clamp(point1)
+    x1, y1 = sampler.clamp(point1)
     x2, y2 = sampler.clamp(point2)
 
     assert (x1, y1) == (sampler.width, sampler.height)
     assert (x2, y2) == (0, 0)
+
 
 def test_is_in_obstacle(sampler: Sampler):
     sampler.grid_map[100, 100] = 1
     point1 = (100.5, 100.5)
 
     assert sampler.is_in_obstacle(point1)
+
 
 def test_distance_from_obstacle(sampler: Sampler):
     sampler.grid_map[100, 100] = 1
@@ -79,42 +89,46 @@ def test_distance_from_obstacle(sampler: Sampler):
 
     point1 = (100, 100)
     point2 = (99, 99)
-    sampler.distance_map = distance_transform_edt((sampler.grid_map == 0))
+    sampler.distance_map = distance_transform_edt(sampler.grid_map == 0)
 
     assert int(sampler.distance_from_obstacle(point1)) == 0
     assert int(sampler.distance_from_obstacle(point2)) == 1
+
 
 def test_uniform(sampler: Sampler):
     point = sampler.uniform()
 
     # Check in bounds
     assert np.all(np.array([0, 0]) <= point)
-    assert np.all(point <= np.array([sampler.width,sampler.height]))
+    assert np.all(point <= np.array([sampler.width, sampler.height]))
 
     assert point.shape == (2,)
+
 
 def test_goal_biased(sampler: Sampler, monkeypatch):
     monkeypatch.setattr(sampler, "goal_bias", 1)
 
     assert np.array_equal(sampler.goal_biased(), sampler.goal)
 
+
 def test_obstacle_biased(sampler: Sampler, monkeypatch):
     sampler.grid_map[:3, :3] = 1
     sampler.grid_map[1, 1] = 0
 
-    p1 = np.array([1.5,1.5])
-    sampler.distance_map = distance_transform_edt((sampler.grid_map == 0))
+    p1 = np.array([1.5, 1.5])
+    sampler.distance_map = distance_transform_edt(sampler.grid_map == 0)
 
     monkeypatch.setattr(sampler, "uniform", lambda: p1)
     monkeypatch.setattr(np.random, "normal", lambda *args, **kwargs: np.array([1, 1]))
 
     assert not np.array_equal(sampler.obstacle_biased(), p1)
 
+
 def test_bridge(sampler: Sampler, monkeypatch):
     sampler.grid_map[:3, :3] = 1
     sampler.grid_map[1, 1] = 0
 
-    sampler.distance_map = distance_transform_edt((sampler.grid_map == 0))
+    sampler.distance_map = distance_transform_edt(sampler.grid_map == 0)
 
     p1 = np.array([0.5, 0.5])
     offset = np.array([2, 2])
@@ -123,11 +137,12 @@ def test_bridge(sampler: Sampler, monkeypatch):
 
     monkeypatch.setattr(sampler, "uniform", lambda: p1)
     monkeypatch.setattr(np.random, "normal", lambda *args, **kwargs: offset)
-    monkeypatch.setattr(sampler, "iterations",  1)
+    monkeypatch.setattr(sampler, "iterations", 1)
 
     test_midpoint = sampler.bridge()
     print(f"Test midpoint: {test_midpoint}, Expected midpoint: {midpoint}")
     assert np.allclose(test_midpoint, midpoint)
+
 
 def test_far_from_obstacle(sampler: Sampler, monkeypatch):
     points = [np.array([1, 1]), np.array([2, 2]), np.array([3, 3])]
@@ -137,9 +152,10 @@ def test_far_from_obstacle(sampler: Sampler, monkeypatch):
     point_iter = iter(points)
 
     monkeypatch.setattr(sampler, "uniform", lambda: next(point_iter))
-    monkeypatch.setattr(sampler,"distance_from_obstacle", lambda point: distances[tuple(point)])
+    monkeypatch.setattr(sampler, "distance_from_obstacle", lambda point: distances[tuple(point)])
 
     assert np.array_equal(sampler.far_from_obstacle(), np.array([2.0, 2.0]))
+
 
 def test_halton(sampler: Sampler, monkeypatch):
     monkeypatch.setattr(sampler.halton_sampler, "random", lambda n: [[1, 1]])
@@ -147,17 +163,19 @@ def test_halton(sampler: Sampler, monkeypatch):
 
     assert np.array_equal(point, sampler.halton())
 
+
 def test_informed(sampler: Sampler, monkeypatch):
     start = Node(np.array([0, 0]))
     goal = Node(np.array([4, 0]))
     best_cost = 6
 
-    monkeypatch.setattr(np.random,"normal", lambda *args, **kwargs: np.array([1.0, 0.0]))
+    monkeypatch.setattr(np.random, "normal", lambda *args, **kwargs: np.array([1.0, 0.0]))
     monkeypatch.setattr(np.random, "rand", lambda: 1)
     result = sampler.informed(start, goal, best_cost)
     expected = np.array([3.5, 0])  # Use formula
 
     assert np.allclose(result, expected)
+
 
 def test_line_based(sampler: Sampler, monkeypatch):
     sampler.grid_map = np.zeros((5, 5), dtype=np.uint8)

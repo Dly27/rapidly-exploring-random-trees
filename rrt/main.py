@@ -1,10 +1,11 @@
 # Paper: https://msl.cs.illinois.edu/~lavalle/papers/Lav98c.pdf
 # Paper: https://arxiv.org/pdf/1105.1186
-# Paper: https://www.researchgate.net/publication/2539782_The_Bridge_Test_for_Sampling_Narrow_Passages_with_Probabilistic_Roadmap_Planners
+# Paper: https://www.researchgate.net/publication/2539782_The_Bridge_Test_for_Sampling_Narrow_Passages_with_Probabilistic_Roadmap_Planners noqa: E501
 # Maps: https://movingai.com/benchmarks/grids.html
 
-from grids.grids import *
 import numpy as np
+
+from grids.grids import load_map
 from rrt.plotter import Plotter
 
 if __name__ == "__main__":
@@ -34,18 +35,37 @@ if __name__ == "__main__":
 
     """
 
-    plot = Plotter(grid_map=grid_map, x_init=start_coords, goal=goal_coords,
-                   step=step, rebuild_freq=rebuild_freq, k=k, r=r, limit=limit,
-                   sampler_method=sampler_method, goal_bias=goal_bias, iterations=iterations,
-                   smooth=False, informed=True
-                   )
+    plot = Plotter(
+        grid_map=grid_map,
+        x_init=start_coords,
+        goal=goal_coords,
+        step=step,
+        rebuild_freq=rebuild_freq,
+        k=k,
+        r=r,
+        limit=limit,
+        sampler_method=sampler_method,
+        goal_bias=goal_bias,
+        iterations=iterations,
+        smooth=False,
+        informed=True,
+    )
 
     plot.plot_grid()
 
-    plot2 = Plotter(grid_map=grid_map, x_init=start_coords, goal=goal_coords,
-                   step=step, rebuild_freq=rebuild_freq, k=k, r=r, limit=limit,
-                   sampler_method=sampler_method, goal_bias=goal_bias, iterations=iterations,
-                   smooth=True,
-                   )
+    plot2 = Plotter(
+        grid_map=grid_map,
+        x_init=start_coords,
+        goal=goal_coords,
+        step=step,
+        rebuild_freq=rebuild_freq,
+        k=k,
+        r=r,
+        limit=limit,
+        sampler_method=sampler_method,
+        goal_bias=goal_bias,
+        iterations=iterations,
+        smooth=True,
+    )
 
     plot2.plot_grid()

@@ -23,15 +23,16 @@ def bresenham(x0, y0, x1, y1):
             err += dx
             y0 += sy
 
+
 class Sampler:
     def __init__(self, sampler_method, goal, goal_bias, height, width, grid_map, iterations=50):
         self.sampler_type = sampler_method
         self.goal = goal
         self.goal_bias = goal_bias
         self.height = height  # Map height
-        self.width = width    # Map width
+        self.width = width  # Map width
         self.grid_map = grid_map
-        self.distance_map = distance_transform_edt((self.grid_map == 0))
+        self.distance_map = distance_transform_edt(self.grid_map == 0)
         self.iterations = iterations
         self.halton_sampler = Halton(d=2, scramble=False)
         self.halton_index = 0
@@ -43,7 +44,7 @@ class Sampler:
             "bridge": self.bridge,
             "halton": self.halton,
             "far": self.far_from_obstacle,
-            "line_based": self.line_based
+            "line_based": self.line_based,
         }
 
     def clamp(self, point):
@@ -60,7 +61,6 @@ class Sampler:
         y = max(0, min(y, self.grid_map.shape[0]))
 
         return x, y
-
 
     def is_in_obstacle(self, point):
         """
@@ -100,12 +100,14 @@ class Sampler:
 
     def obstacle_biased(self, sigma=5):
         """
-        Uniformly samples one point and use a Gaussian sample for another point located around the first
-        and returns the point closest to an obstacle
+        Uniformly samples one point and use a Gaussian sample for another
+        point located around the first and returns the point closest to an obstacle
         :return: (float, float): A 2D point in the grid map
         """
         p1 = self.uniform()
-        p2 = np.clip(p1 + np.random.normal(0, sigma, size=2), [0, 0], [self.width, self.height])  # Clip to keep p2 in grid_map bounds
+        p2 = np.clip(
+            p1 + np.random.normal(0, sigma, size=2), [0, 0], [self.width, self.height]
+        )  # Clip to keep p2 in grid_map bounds
         if self.distance_from_obstacle(p1) <= self.distance_from_obstacle(p2):
             return p1
         else:
@@ -113,22 +115,29 @@ class Sampler:
 
     def bridge(self, sigma=5):
         """
-        Uniformly samples self.iterations number of points and selects a midpoint of two points which are
-        located in distinct obstacles, if found
+        Uniformly samples self.iterations number of points and selects a midpoint
+        of two points which are located in distinct obstacles, if found
         :return: (float, float): A 2D point in the grid map
         """
-        for i in range(self.iterations):
+        for _ in range(self.iterations):
             p1 = self.uniform()
-            p2 = np.clip(p1 + np.random.normal(0, sigma, size=2), [0, 0], [self.width, self.height])  # Clip to keep p2 in grid_map bounds
+            p2 = np.clip(
+                p1 + np.random.normal(0, sigma, size=2), [0, 0], [self.width, self.height]
+            )  # Clip to keep p2 in grid_map bounds
             midpoint = (p1 + p2) / 2
 
-            if self.is_in_obstacle(p1) and self.is_in_obstacle(p2) and not self.is_in_obstacle(midpoint):
+            if (
+                self.is_in_obstacle(p1)
+                and self.is_in_obstacle(p2)
+                and not self.is_in_obstacle(midpoint)
+            ):
                 return midpoint
         return self.uniform()
 
     def far_from_obstacle(self):
         """
-        Uniformly samples self.iterations number of points and selects the point farthest from its closest obstacle
+        Uniformly samples self.iterations number of points
+        and selects the point farthest from its closest obstacle
         :return: (float, float): A 2D point in the grid map
         """
         points = [self.uniform() for _ in range(self.iterations)]
@@ -137,7 +146,8 @@ class Sampler:
 
     def halton(self):
         """
-        Returns next point in the Halton low-discrepancy sequence scaled by the width and height of the grid map
+        Returns next point in the Halton low-discrepancy sequence scaled
+        by the width and height of the grid map
         :return: (float, float): A 2D point in the grid map
         """
         point = self.halton_sampler.random(n=1)[0]
@@ -178,11 +188,11 @@ class Sampler:
 
         # Radii of the ellipsoid axes
         r1 = best_cost / 2
-        if r1 ** 2 - (c_min / 2) ** 2 < 0:
+        if r1**2 - (c_min / 2) ** 2 < 0:
             # Safety fallback
             r2 = 0
         else:
-            r2 = np.sqrt(r1 ** 2 - (c_min / 2) ** 2)
+            r2 = np.sqrt(r1**2 - (c_min / 2) ** 2)
         radii = np.array([r1 * 0.5] + [r2 * 0.5] * (dim - 1))
 
         def sample_unit_n_ball(d):
@@ -199,8 +209,10 @@ class Sampler:
 
     def line_based(self):
         """
-        Samples several lines and picks the midpoint of the line with the least obstacle intersections.
-        :return: (float, float): A 2D point (midpoint) from the line intersecting the most obstacles.
+        Samples several lines and picks the midpoint of the line with
+        the least obstacle intersections.
+        :return: (float, float): A 2D point (midpoint) from the line
+        intersecting the most obstacles.
         """
         min_intersections = float("inf")
         x0, y0, x1, y1 = None, None, None, None
@@ -229,7 +241,6 @@ class Sampler:
             return self.uniform()
         else:
             return np.array(free_points[len(free_points) // 2])
-
 
     def sample(self):
         """

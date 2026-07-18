@@ -1,17 +1,34 @@
-from rrt.RRT import RRT
-import numpy as np
 import time
 from concurrent.futures import ProcessPoolExecutor, as_completed
+
+import numpy as np
+
+from rrt.RRT import RRT
+
 
 def run_rrt(params):
     """
     Runs RRT once and measures perfomance metrics for this single run
     :return: array: Relevent performance metrics
     """
-    grid_map, x_init, goal, step, rebuild_freq, k, r, informed, sampler_method, goal_bias, sample_iterations = params
+    (
+        grid_map,
+        x_init,
+        goal,
+        step,
+        rebuild_freq,
+        k,
+        r,
+        informed,
+        sampler_method,
+        goal_bias,
+        sample_iterations,
+    ) = params
 
     rrt = RRT(x_init=x_init, grid_map=grid_map, rebuild_freq=rebuild_freq, goal=goal, step=step)
-    rrt.select_sampler(sampler_method=sampler_method, goal_bias=goal_bias, iterations=sample_iterations)
+    rrt.select_sampler(
+        sampler_method=sampler_method, goal_bias=goal_bias, iterations=sample_iterations
+    )
 
     if informed:
         grow_start = time.perf_counter()
@@ -30,14 +47,9 @@ def run_rrt(params):
         rrt.get_path(goal_node=nearest)
         path_length = rrt.path_cost()
     else:
-        path_length = float('inf')
+        path_length = float("inf")
 
-    return [
-        goal_reached,
-        path_length,
-        grow_end - grow_start,
-        node_count
-    ]
+    return [goal_reached, path_length, grow_end - grow_start, node_count]
 
 
 class Benchmark:
@@ -70,7 +82,7 @@ class Benchmark:
                 self.informed,
                 sampler_method,
                 goal_bias,
-                sample_iterations
+                sample_iterations,
             ]
             for _ in range(test_iterations)
         ]
@@ -83,16 +95,18 @@ class Benchmark:
                 result = future.result()
                 results.append(result)
 
-        successes, path_lengths, grow_times, node_counts = zip(*results)
+        successes, path_lengths, grow_times, node_counts = zip(*results, strict=False)
 
         path_lengths = np.array(path_lengths)
         finite_paths = path_lengths[np.isfinite(path_lengths)]
 
         self.stats = {
             "success_rate": sum(successes) / test_iterations,
-            "mean_path_length": float(np.mean(finite_paths)) if len(finite_paths) > 0 else float('inf'),
+            "mean_path_length": float(np.mean(finite_paths))
+            if len(finite_paths) > 0
+            else float("inf"),
             "mean_grow_time": np.mean(grow_times),
-            "mean_nodes": np.mean(node_counts)
+            "mean_nodes": np.mean(node_counts),
         }
 
         print(self.stats)

@@ -1,12 +1,27 @@
-import numpy as np
 import matplotlib.pyplot as plt
-from rrt.RRT import RRT
+import numpy as np
 from matplotlib.collections import LineCollection
 
-class Plotter:
-    def __init__(self, grid_map, x_init, goal, step, rebuild_freq, k, r, limit,
-                 sampler_method, goal_bias, iterations, smooth=False, informed=False):
+from rrt.RRT import RRT
 
+
+class Plotter:
+    def __init__(
+        self,
+        grid_map,
+        x_init,
+        goal,
+        step,
+        rebuild_freq,
+        k,
+        r,
+        limit,
+        sampler_method,
+        goal_bias,
+        iterations,
+        smooth=False,
+        informed=False,
+    ):
         self.grid_map = grid_map
         self.x_init = x_init
         self.goal = goal
@@ -19,8 +34,7 @@ class Plotter:
         self.goal_bias = goal_bias
         self.iterations = iterations
         self.smooth = smooth
-        self.informed= informed
-
+        self.informed = informed
 
     def plot_grid(self):
         """
@@ -57,35 +71,35 @@ class Plotter:
         fig, ax = plt.subplots()
 
         # Draw obstacles
-        ax.imshow(self.grid_map, cmap='Greys', origin='lower')
+        ax.imshow(self.grid_map, cmap="Greys", origin="lower")
 
         # Draw tree edges
         segments = []
         for node in rrt.nodes:
             if node.parent is not None:
                 segments.append([node.states, node.parent.states])
-        lc = LineCollection(segments, colors='lightblue', linewidths=0.5)
+        lc = LineCollection(segments, colors="lightblue", linewidths=0.5)
         ax.add_collection(lc)
 
         # Draw tree nodes as one scatter
         xs = [node.states[0] for node in rrt.nodes]
         ys = [node.states[1] for node in rrt.nodes]
-        ax.scatter(xs, ys, s=5, color='gray', label='Tree Nodes')
+        ax.scatter(xs, ys, s=5, color="gray", label="Tree Nodes")
 
         # Draw path
         path = np.array(path)
-        ax.plot(path[:, 0], path[:, 1], color='red', linewidth=2, label='Path')
+        ax.plot(path[:, 0], path[:, 1], color="red", linewidth=2, label="Path")
 
         # Start and goal
-        ax.scatter(*self.x_init, color='green', label='Start')
-        ax.scatter(*self.goal, color='blue', label='Goal')
+        ax.scatter(*self.x_init, color="green", label="Start")
+        ax.scatter(*self.goal, color="blue", label="Goal")
 
         if self.informed:
             ax.set_title("Informed")
         else:
             ax.set_title(f"{self.sampler_method}")
 
-        ax.set_aspect('equal')
+        ax.set_aspect("equal")
         ax.grid(True)
         ax.legend()
         plt.show()
