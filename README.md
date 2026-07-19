@@ -61,7 +61,7 @@ path = rrt.get_path(goal_node)
 print("Path cost:", rrt.path_cost())
 ```
 
-For optimal planning, use informed sampling instead of `grow`:
+For informed sampling:
 
 ```python
 rrt.informed_grow(k=5000, r=3, limit=10)
