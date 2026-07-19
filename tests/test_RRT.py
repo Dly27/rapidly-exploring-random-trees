@@ -28,7 +28,7 @@ class SampleRun:
 
 @pytest.fixture
 def sample_run() -> SampleRun:
-    map_path = Path("grids") / "street-map" / "London_1_512.map"
+    map_path = Path("rrt") / "grids" / "street-map" / "London_1_512.map"
     grid_map = load_map(map_path)
     grid_map[376, 240] = 0
 
