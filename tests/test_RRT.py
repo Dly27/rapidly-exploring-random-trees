@@ -5,8 +5,8 @@ import numpy as np
 import pytest
 from numpy.typing import NDArray
 
-from grids.grids import load_map
-from rrt.RRT import RRT, Node
+from rrt.grids.grids import load_map
+from rrt.rrt import RRT, Node
 
 
 @dataclass

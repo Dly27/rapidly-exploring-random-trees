@@ -6,8 +6,8 @@ import pytest
 from numpy.typing import NDArray
 from scipy.ndimage import distance_transform_edt
 
-from grids.grids import load_map
-from rrt.RRT import Node
+from rrt.grids.grids import load_map
+from rrt.rrt import Node
 from rrt.sampler import Sampler
 
 

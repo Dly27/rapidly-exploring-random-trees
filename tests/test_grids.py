@@ -1,6 +1,6 @@
 import numpy as np
 
-from grids import grids
+from rrt.grids import grids
 
 
 def test_random_cluttered_map(monkeypatch):
