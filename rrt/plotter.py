@@ -49,9 +49,7 @@ class Plotter:
         )
 
         rrt.select_sampler(
-            sampler_method=self.sampler_method,
-            goal_bias=self.goal_bias,
-            iterations=self.iterations
+            sampler_method=self.sampler_method, goal_bias=self.goal_bias, iterations=self.iterations
         )
 
         if self.informed:
