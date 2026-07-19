@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.collections import LineCollection
 
-from rrt.RRT import RRT
+from rrt.rrt import RRT
 
 
 class Plotter:

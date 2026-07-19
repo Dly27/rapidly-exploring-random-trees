@@ -3,7 +3,7 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 
 import numpy as np
 
-from rrt.RRT import RRT
+from rrt.rrt import RRT
 
 
 def run_rrt(params):

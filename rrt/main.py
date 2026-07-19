@@ -1,15 +1,15 @@
 # Paper: https://msl.cs.illinois.edu/~lavalle/papers/Lav98c.pdf
 # Paper: https://arxiv.org/pdf/1105.1186
-# Paper: https://www.researchgate.net/publication/2539782_The_Bridge_Test_for_Sampling_Narrow_Passages_with_Probabilistic_Roadmap_Planners noqa: E501
+# Paper: https://www.researchgate.net/publication/2539782_The_Bridge_Test_for_Sampling_Narrow_Passages_with_Probabilistic_Roadmap_Planners # noqa: E501
 # Maps: https://movingai.com/benchmarks/grids.html
 
 import numpy as np
 
-from grids.grids import load_map
+from rrt.grids.grids import load_map
 from rrt.plotter import Plotter
 
 if __name__ == "__main__":
-    grid_map = load_map("../grids/street-map/London_1_512.map")
+    grid_map = load_map("grids/street-map/London_1_512.map")
     start_coords = [1, 1]
     goal_coords = np.array([376, 240])
     rebuild_freq = 500
