@@ -1,4 +1,4 @@
-name: Tests
+name: CI
 
 on:
   push:
@@ -7,26 +7,40 @@ on:
     branches: [ main ]
 
 jobs:
-  test:
+  quality:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
-        python-version: ["3.11"]
+        python-version: ["3.11", "3.12"]
+
+    env:
+      MPLBACKEND: Agg
 
     steps:
       - name: Check out repo
         uses: actions/checkout@v4
 
+      - name: Install Poetry
+        run: pipx install poetry
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-
-      - name: Install Poetry
-        run: pipx install poetry
+          cache: poetry
 
       - name: Install dependencies
-        run: poetry install --no-interaction
+        run: poetry install --no-interaction --with dev
+
+      - name: Check formatting
+        run: poetry run ruff format --check .
+
+      - name: Lint
+        run: poetry run ruff check .
+
+      - name: Type check
+        run: poetry run mypy rrt
 
       - name: Run tests
-        run: poetry run pytest -v
+        run: poetry run pytest -v --cov=rrt --cov-report=term-missing
